@@ -4,6 +4,7 @@
 A smart washer using Arduino
 
 __This is a work in progress (WIP)__
+
 __I am using an Arduino Uno for the initial development, and shall move to a Wemos D1 when IFTTT is required__
 
 #### How it works
