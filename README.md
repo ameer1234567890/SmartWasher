@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ameer1234567890/SmartWasher.svg?branch=master)](https://travis-ci.org/ameer1234567890/SmartWasher)
+
 # SmartWasher
 A smart washer using Arduino
 
@@ -28,3 +30,6 @@ Wemos D1  -  Vibration Sensor
 GND       -  GND
 A0        -  SIG
 ```
+
+* Test
+* Test
