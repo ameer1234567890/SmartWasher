@@ -1,4 +1,4 @@
-## SmartWasher
+# SmartWasher
 A smart washer using Arduino
 
 __This is a WIP (Work in progress)__
