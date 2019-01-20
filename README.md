@@ -14,9 +14,10 @@ __I am using an Arduino Uno for the initial development, and shall move to a Wem
 * When `probableStart` reaches 5 (5 tickds), washer is deemed to have started.
 * If the aforementioned countdown finishes before reaching 5 ticks, `probableStart` is reset to zero.
 * While washing is started, Arduino waits for the ticks to continue.
-* If ticks do not continue for a period of 45 seconds, it is deemed that washer is finished.
+* If ticks do not continue for a period of 55 seconds, it is deemed that washer is finished.
 * For this to work, a variable named `probableFinish` is incremented every time a tick is detected.
-* `probableFinish` variable is decremented every time a tick is not detected in a 5 second time period.
+* `probableFinish` and `startMillis` variables are reset when it reaches 45 seconds.
+* If `currentMillis` variable reaches 55 seconds, washer is deemed to have finished.
 * When washer is finished, a notification is sent via IFTTT webhook.
 * Additionally, the cycle is started from the begining, where Auduino waits for ticks to start washing.
 
