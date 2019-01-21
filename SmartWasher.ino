@@ -25,7 +25,7 @@ void setup() {
 void loop() {
   sensorValue = analogRead(SENSOR_PIN);
   //Serial.println(sensorValue);
-  if (!washing) {
+  if (washing == false) {
     digitalWrite(LED_PIN, 0);
     if (sensorValue < minSense) {
       Serial.print("Not Started - sensorValue: ");
@@ -43,15 +43,17 @@ void loop() {
       noTone(BUZZER_PIN);
       Serial.print("probableStart: ");
       Serial.println(probableStart);
+      if (probableStart >= numTicks) {
+        Serial.print(probableStart);
+        Serial.println(" ticks registered! Washer start deemed!");
+        washing = true;
+        probableStart = 0;
+      }
       delay(delayBetweenChecks);
-    }
-    if (probableStart >= numTicks) {
-      washing = true;
-      Serial.print(probableStart);
-      Serial.println(" ticks registered! Washer start deemed!");
     }
   } else {
     digitalWrite(LED_PIN, 1);
+    currentMillis = millis();
     if (sensorValue < minSense) {
       Serial.print("Running - sensorValue: ");
       Serial.println(sensorValue);
@@ -59,7 +61,6 @@ void loop() {
         startMillis = millis();
       }
       probableFinish++;
-      currentMillis = millis();
       if (currentMillis > (startMillis + timeTillDetection)) {
         probableFinish = 0;
       }
@@ -71,10 +72,11 @@ void loop() {
       delay(delayBetweenChecks);
     }
     if (currentMillis > (startMillis + timeTillDetection + 10000)) {
+      Serial.print("No ticks registered for ");
+      Serial.print((timeTillDetection + 10000) / 1000);
+      Serial.println(" seconds. Washer finish deemed!");
       washing = false;
-      Serial.print('No ticks registered for ');
-      Serial.print(timeTillDetection + 10000);
-      Serial.println(' seconds. Washer finish deemed!');
+      probableFinish = 0;
       // IFTTT webhook logic goes here...
     }
   }

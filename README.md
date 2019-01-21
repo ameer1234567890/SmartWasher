@@ -25,7 +25,7 @@ __I am using an Arduino Uno for the initial development, and shall move to a Wem
 * Wemos D1 / Any ESP8266 based microcontroller
 * A vibration sensor with three pins (VCC, GND, SIG)
 
-Pinout for ESP8266
+Pinout for Wemos D1
 ```
 Wemos D1  -  Vibration Sensor
 -----------------------------
