@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
-#define BUZZER_PIN 12
+#define BUZZER_PIN D5
 #define SENSOR_PIN A0
-#define LED_PIN 13
+#define LED_PIN D4
 int sensorValue;
 int minSense = 950;
 int delayBetweenChecks = 5000; // 5 seconds
