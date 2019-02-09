@@ -45,7 +45,6 @@ void loop() {
     startUpSignalled = true;
   }
   sensorValue = analogRead(SENSOR_PIN);
-  //Serial.println(sensorValue);
   if (washing == false) {
     digitalWrite(LED_PIN, LOW);
     if (sensorValue < minSense) {
