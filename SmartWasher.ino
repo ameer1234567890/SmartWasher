@@ -7,8 +7,7 @@
 Secrets.h file should contain data as below:
 #define WIFI_SSID "xxxxxxxxxx"
 #define WIFI_PASSWORD "xxxxxxxxxx"
-#define IFTTT_URL "https://maker.ifttt.com/trigger/washer_finished/with/key/xxxxxxxxxxxxxxxxxxxxxx"
-#define CERT_FINGERPRINT "aa 75 cb 41 2e d5 f9 97 ff 5d a0 8b 7d ac 12 21 08 4b 00 8c"
+#define IFTTT_URL "http://maker.ifttt.com/trigger/washer_finished/with/key/xxxxxxxxxxxxxxxxxxxxxx"
 */
 
 #define BUZZER_PIN D5
@@ -137,7 +136,7 @@ void notify() {
 bool postToIfttt() {
   HTTPClient http;
   uint httpCode;
-  http.begin(IFTTT_URL, CERT_FINGERPRINT);
+  http.begin(IFTTT_URL);
   httpCode = http.GET();
   http.end();
   if (httpCode == 200) {
