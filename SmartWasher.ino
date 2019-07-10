@@ -28,6 +28,7 @@ unsigned long startMillis;
 unsigned long currentMillis;
 bool washing = false;
 bool startUpSignalled = false;
+WiFiClient wClient;
 
 void setup() {
   pinMode(SENSOR_PIN, INPUT);
@@ -44,6 +45,8 @@ void loop() {
     startUpSignalled = true;
   }
   sensorValue = analogRead(SENSOR_PIN);
+  Serial.println(sensorValue);
+  delay(1000);
   if (washing == false) {
     digitalWrite(LED_PIN, LOW);
     if (sensorValue < minSense) {
@@ -136,7 +139,7 @@ void notify() {
 bool postToIfttt() {
   HTTPClient http;
   uint httpCode;
-  http.begin(IFTTT_URL);
+  http.begin(wClient, IFTTT_URL);
   httpCode = http.GET();
   http.end();
   if (httpCode == 200) {
