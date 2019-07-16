@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include "Secrets.h"
@@ -10,96 +9,61 @@ Secrets.h file should contain data as below:
 #define IFTTT_URL "http://maker.ifttt.com/trigger/washer_finished/with/key/xxxxxxxxxxxxxxxxxxxxxx"
 */
 
-#define BUZZER_PIN D5
-#define SENSOR_PIN A0
-#define LED_PIN D4
+#define SENSOR_PIN D3
+#define BUZZER_PIN D4
+#define LED_PIN D5
 
-void setupWifi(void);
-bool postToIfttt(void);
-
-int sensorValue;
-int minSense = 950;
-int delayBetweenChecks = 5000; // 5 seconds
-int numTicks = 5;
-int probableStart = 0;
-int probableFinish = 0;
-unsigned long timeTillDetection = 45000; // 45 seconds
-unsigned long startMillis;
-unsigned long currentMillis;
+long lastTickTime;
+//long lastTime;
 bool washing = false;
-bool startUpSignalled = false;
+int sensorValue = HIGH;
+int tickCount = 0;
+int delayBetweenTicks = 1000; // 1 second
+int resetInterval = 10000; // 10 seconds
+int numTicksRequired = 10;
 WiFiClient wClient;
+
 
 void setup() {
   pinMode(SENSOR_PIN, INPUT);
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
-  Serial.begin(115200);
-  Serial.println("OS Start up");
+  Serial.begin(115200);  
+  Serial.println("\nStartup");
   setupWifi();
 }
 
+
 void loop() {
-  if (!startUpSignalled) {
-    Serial.println("Program startup");
-    startUpSignalled = true;
-  }
-  sensorValue = analogRead(SENSOR_PIN);
-  Serial.println(sensorValue);
-  delay(1000);
-  if (washing == false) {
-    digitalWrite(LED_PIN, LOW);
-    if (sensorValue < minSense) {
-      Serial.print("Not Started - sensorValue: ");
-      Serial.println(sensorValue);
-      if (probableStart == 0) {
-        startMillis = millis();
-      }
-      probableStart++;
-      currentMillis = millis();
-      if (currentMillis > (startMillis + timeTillDetection)) {
-        probableStart = 0;
-      }
-      tone(BUZZER_PIN, 1000);
-      delay(50);
-      noTone(BUZZER_PIN);
-      Serial.print("probableStart: ");
-      Serial.println(probableStart);
-      if (probableStart >= numTicks) {
-        Serial.print(probableStart);
-        Serial.println(" ticks registered! Washer start deemed!");
-        washing = true;
-        probableStart = 0;
-        digitalWrite(LED_PIN, HIGH);
-      }
-      delay(delayBetweenChecks);
+  sensorValue = digitalRead(SENSOR_PIN);
+  if (!washing) {
+    if (sensorValue == LOW && millis() > (lastTickTime + delayBetweenTicks)) {
+      tickCount++;
+      lastTickTime = millis();
+      Serial.print("Vibration detected. tickCount: ");
+      Serial.println(tickCount);
+    }
+    if (tickCount > numTicksRequired) {
+      washing = true;
+      Serial.println("Washing started!");
     }
   } else {
-    currentMillis = millis();
-    if (sensorValue < minSense) {
-      Serial.print("Running - sensorValue: ");
-      Serial.println(sensorValue);
-      if (probableFinish == 0) {
-        startMillis = millis();
+    if (sensorValue == LOW) {
+      if (millis() > (lastTickTime + delayBetweenTicks)) {
+        lastTickTime = millis();
+        tickCount++;
+        Serial.print("Vibration detected! tickCount: ");
+        Serial.println(tickCount);
       }
-      probableFinish++;
-      if (currentMillis > (startMillis + timeTillDetection)) {
-        probableFinish = 0;
+      if (tickCount > numTicksRequired) {
+        tickCount = numTicksRequired;
+        Serial.print("Ticker going too high! Reset! tickCount: ");
+        Serial.println(tickCount);
       }
-      tone(BUZZER_PIN, 1000);
-      delay(50);
-      noTone(BUZZER_PIN);
-      Serial.print("probableFinish: ");
-      Serial.println(probableFinish);
-      delay(delayBetweenChecks);
     }
-    if (currentMillis > (startMillis + timeTillDetection + 10000)) {
-      Serial.print("No ticks registered for ");
-      Serial.print((timeTillDetection + 10000) / 1000);
-      Serial.println(" seconds. Washer finish deemed!");
+    if (tickCount == 0) {
       washing = false;
-      probableFinish = 0;
-      digitalWrite(LED_PIN, LOW);
+      Serial.println("Washing finished!");
       if(WiFi.status() == WL_CONNECTED) {
         Serial.println("Wifi was connected!");
         notify();
@@ -109,6 +73,21 @@ void loop() {
         notify();
       }
     }
+  }
+
+  if (!washing && (millis() - lastTickTime) > resetInterval) {
+    if (tickCount > 0) {
+      tickCount = 0;
+      Serial.print("Ticker reset due to inactivity! tickCount: ");
+      Serial.println(tickCount);
+    }
+  }
+
+  if (washing && (millis() - lastTickTime) > resetInterval) {
+    tickCount--;
+    Serial.print("Ticker reduced due to inactivity! tickCount: ");
+    Serial.println(tickCount);
+    lastTickTime = millis();
   }
 }
 
