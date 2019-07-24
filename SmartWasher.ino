@@ -12,24 +12,24 @@
 #define IFTTT_URL "http://maker.ifttt.com/trigger/washer_finished/with/key/xxxxxxxxxxxxxxxxxxxxxx"
 #endif
 
+#define LED_PIN D5
 #define SENSOR_PIN D3
 #define BUZZER_PIN D4
-#define LED_PIN D5
-#define OTA_HOSTNAME "SmartWasher"
 #define SERVER_PORT 80
+#define OTA_HOSTNAME "SmartWasher"
 
+String logMsg;
+String logTime;
 long lastTickTime;
-//long lastTime;
+const int DST = 0;
+int tickCount = 0;
 bool washing = false;
 int sensorValue = HIGH;
-int tickCount = 0;
+const int TIMEZONE = 5;
+int numTicksRequired = 10;
 int delayBetweenTicks = 1000; // 1 second
 int resetInterval = 10000; // 10 seconds
-int numTicksRequired = 10;
-const int TIMEZONE = 5;
-const int DST = 0;
-String logTime;
-String logMsg;
+
 WiFiClient wClient;
 ESP8266WebServer server(SERVER_PORT);
 
