@@ -3,6 +3,7 @@
 #include <ESP8266WebServer.h>
 #include <ArduinoOTA.h>
 #include <time.h>
+#include <Wire.h>
 #include "Secrets.h"
 
 /* Secrets.h file should contain data as below: */
@@ -13,8 +14,6 @@
 #endif
 
 #define LED_PIN D5
-#define SENSOR_PIN D3
-#define BUZZER_PIN D4
 #define SERVER_PORT 80
 #define OTA_HOSTNAME "SmartWasher"
 
@@ -26,9 +25,11 @@ int tickCount = 0;
 bool washing = false;
 int sensorValue = HIGH;
 const int TIMEZONE = 5;
-int numTicksRequired = 10;
-int delayBetweenTicks = 1000; // 1 second
-int resetInterval = 10000; // 10 seconds
+const int numTicksRequired = 10;
+const int delayBetweenTicks = 1000; // 1 second
+const int resetInterval = 10000; // 10 seconds
+const int MPU = 0x68;
+const int threshold = 16000;
 
 WiFiClient wClient;
 ESP8266WebServer server(SERVER_PORT);
@@ -36,10 +37,13 @@ ESP8266WebServer server(SERVER_PORT);
 
 void setup() {
   log("I/system: startup");
-  pinMode(SENSOR_PIN, INPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+  Wire.begin();
+  Wire.beginTransmission(MPU);
+  Wire.write(0x6B);
+  Wire.write(0);
+  Wire.endTransmission(true);
   Serial.begin(115200);
   setupWifi();
   setupTime();
@@ -48,11 +52,9 @@ void setup() {
       <a href=\"/log\">/log</a><br>\
       <a href=\"/reboot\">/reboot</a><br>\
     ");
-    log("I/server: served / to " + server.client().remoteIP().toString());
   });
   server.on("/log", []() {
     server.send(200, "text/plain", logMsg);
-    log("I/server: served /log to " + server.client().remoteIP().toString());
   });
   server.on("/reboot", []() {
     server.send(200, "text/plain", "rebooting");
@@ -66,9 +68,13 @@ void setup() {
 
 
 void loop() {
-  sensorValue = digitalRead(SENSOR_PIN);
+  Wire.beginTransmission(MPU);
+  Wire.write(0x3B);
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU, 12, true);
+  sensorValue = Wire.read()<<8|Wire.read();
   if (!washing) {
-    if (sensorValue == LOW && millis() > (lastTickTime + delayBetweenTicks)) {
+    if (sensorValue < threshold && millis() > (lastTickTime + delayBetweenTicks)) {
       tickCount++;
       lastTickTime = millis();
       log("I/ticker: vibration detected. tickCount => " + String(tickCount));
@@ -78,11 +84,11 @@ void loop() {
       log("I/ticker: washing started!");
     }
   } else {
-    if (sensorValue == LOW) {
+    if (sensorValue < threshold) {
       if (millis() > (lastTickTime + delayBetweenTicks)) {
         lastTickTime = millis();
         tickCount++;
-        log("I/ticker: vibration detected. tickCount => " + String(tickCount));
+        log("I/ticker: vibration detected " + String(sensorValue) + ". tickCount => " + String(tickCount));
       }
       if (tickCount > numTicksRequired) {
         tickCount = numTicksRequired;
