@@ -19,17 +19,18 @@
 
 String logMsg;
 String logTime;
-long lastTickTime;
 const int DST = 0;
 int tickCount = 0;
 bool washing = false;
+const int MPU = 0x68;
 int sensorValue = HIGH;
 const int TIMEZONE = 5;
-const int numTicksRequired = 10;
-const int delayBetweenTicks = 1000; // 1 second
-const int resetInterval = 10000; // 10 seconds
-const int MPU = 0x68;
+unsigned long lastTickTime;
 const int threshold = 16000;
+const int resetInterval = 5000; // 5 seconds
+const int numTicksRequired = 10;
+bool sensorErrorReported = false;
+const int delayBetweenTicks = 1000; // 1 second
 
 WiFiClient wClient;
 ESP8266WebServer server(SERVER_PORT);
@@ -72,54 +73,63 @@ void loop() {
   Wire.write(0x3B);
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 12, true);
+
   sensorValue = Wire.read()<<8|Wire.read();
-  if (!washing) {
-    if (sensorValue < threshold && millis() > (lastTickTime + delayBetweenTicks)) {
-      tickCount++;
-      lastTickTime = millis();
-      log("I/ticker: vibration detected. tickCount => " + String(tickCount));
-    }
-    if (tickCount > numTicksRequired) {
-      washing = true;
-      log("I/ticker: washing started!");
+  if (sensorValue < 2) {
+    if (!sensorErrorReported) {
+      sensorErrorReported = true;
+      log("E/ticker: Sensor error! " + String(sensorValue));
     }
   } else {
-    if (sensorValue < threshold) {
-      if (millis() > (lastTickTime + delayBetweenTicks)) {
-        lastTickTime = millis();
+    sensorErrorReported = false;
+    if (!washing) {
+      if (sensorValue < threshold && millis() > (lastTickTime + delayBetweenTicks)) {
         tickCount++;
+        lastTickTime = millis();
         log("I/ticker: vibration detected " + String(sensorValue) + ". tickCount => " + String(tickCount));
       }
       if (tickCount > numTicksRequired) {
-        tickCount = numTicksRequired;
-        log("I/ticker: ticker going too high! reset! tickCount => " + String(tickCount));
+        washing = true;
+        log("I/ticker: washing started!");
+      }
+    } else {
+      if (sensorValue < threshold) {
+        if (millis() > (lastTickTime + delayBetweenTicks)) {
+          lastTickTime = millis();
+          tickCount++;
+          log("I/ticker: vibration detected " + String(sensorValue) + ". tickCount => " + String(tickCount));
+        }
+        if (tickCount > numTicksRequired) {
+          tickCount = numTicksRequired;
+          log("I/ticker: ticker going too high! reset! tickCount => " + String(tickCount));
+        }
+      }
+      if (tickCount == 0) {
+        washing = false;
+        log("I/ticker: washing finished!");
+        if(WiFi.status() == WL_CONNECTED) {
+          log("I/ticker: wifi was connected!");
+          notify();
+        } else {
+          log("I/ticker: wifi was disconnected!");
+          setupWifi();
+          notify();
+        }
       }
     }
-    if (tickCount == 0) {
-      washing = false;
-      log("I/ticker: washing finished!");
-      if(WiFi.status() == WL_CONNECTED) {
-        log("I/ticker: wifi was connected!");
-        notify();
-      } else {
-        log("I/ticker: wifi was disconnected!");
-        setupWifi();
-        notify();
+
+    if (!washing && (millis() - lastTickTime) > resetInterval) {
+      if (tickCount > 0) {
+        tickCount = 0;
+        log("I/ticker: ticker reset due to inactivity! tickCount => " + String(tickCount));
       }
     }
-  }
 
-  if (!washing && (millis() - lastTickTime) > resetInterval) {
-    if (tickCount > 0) {
-      tickCount = 0;
-      log("I/ticker: ticker reset due to inactivity! tickCount => " + String(tickCount));
+    if (washing && (millis() - lastTickTime) > resetInterval) {
+      tickCount--;
+      log("I/ticker: ticker reduced due to inactivity! tickCount => " + String(tickCount));
+      lastTickTime = millis();
     }
-  }
-
-  if (washing && (millis() - lastTickTime) > resetInterval) {
-    tickCount--;
-    log("I/ticker: ticker reduced due to inactivity! tickCount => " + String(tickCount));
-    lastTickTime = millis();
   }
 
   server.handleClient();
