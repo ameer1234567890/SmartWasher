@@ -74,7 +74,7 @@ void loop() {
   Wire.beginTransmission(MPU);
   Wire.write(0x3B);
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU, 12, true);
+  Wire.requestFrom(MPU, 12, 1);
 
   sensorValue = Wire.read()<<8|Wire.read();
   if (sensorValue < 2) {
