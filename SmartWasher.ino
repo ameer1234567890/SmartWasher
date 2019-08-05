@@ -13,18 +13,20 @@
 #define IFTTT_URL "http://maker.ifttt.com/trigger/washer_finished/with/key/xxxxxxxxxxxxxxxxxxxxxx"
 #endif
 
+/* Configurable variables */
 #define LED_PIN D5
 #define SERVER_PORT 80
 #define OTA_HOSTNAME "SmartWasher"
+const int DST = 0; // Daylight Saving Time
+const int MPU = 0x68; // i2c address for the sensor
+const int TIMEZONE = 5; // your timezone (UTC+5)
 
+/* Do not change unless you know what you are doing */
 String logMsg;
 String logTime;
-const int DST = 0;
+int sensorValue;
 int tickCount = 0;
 bool washing = false;
-const int MPU = 0x68;
-int sensorValue = HIGH;
-const int TIMEZONE = 5;
 unsigned long lastTickTime;
 const int threshold = 16000;
 const int resetInterval = 5000; // 5 seconds
