@@ -118,11 +118,10 @@ void loop() {
       }
     }
 
-    if (!washing && (millis() - lastTickTime) > resetInterval) {
-      if (tickCount > 0) {
-        tickCount = 0;
-        log("I/ticker: ticker reset due to inactivity! tickCount => " + String(tickCount));
-      }
+    if (!washing && (millis() - lastTickTime) > resetInterval && tickCount > 0) {
+      tickCount--;
+      log("I/ticker: ticker reduced due to inactivity! tickCount => " + String(tickCount));
+      lastTickTime = millis();
     }
 
     if (washing && (millis() - lastTickTime) > resetInterval) {
